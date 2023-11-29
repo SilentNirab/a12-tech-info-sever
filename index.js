@@ -31,6 +31,10 @@ async function run() {
         const reviewCollection = client.db("tech-info").collection("reviews");
 
         //reviews releted api
+        app.get('/reviews', async(req, res) => {
+            const result = await reviewCollection.find().toArray()
+            res.send(result)
+        })
         app.post('/reviews', async(req, res) => {
             const review = req.body;
             const result = await reviewCollection.insertOne(review)
