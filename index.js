@@ -3,7 +3,7 @@ const app = express();
 const cors = require('cors');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 // middleware
 app.use(cors());
@@ -28,10 +28,25 @@ async function run() {
 
         const productCollection = client.db("tech-info").collection("products");
         const userCollection = client.db("tech-info").collection("users");
+        const reviewCollection = client.db("tech-info").collection("reviews");
+
+        //reviews releted api
+        app.post('/reviews', async(req, res) => {
+            const review = req.body;
+            const result = await reviewCollection.insertOne(review)
+            res.send(result)
+        })
 
         //Product related api 
         app.get('/products', async(req, res) => {
             const result = await productCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.get('/products/:id', async(req, res) =>{
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)}
+            const result = await productCollection.findOne(query)
             res.send(result)
         })
 
