@@ -54,6 +54,25 @@ async function run() {
             res.send(result)
         })
 
+        app.post('/products', async(req, res) =>{
+            const product = req.body;
+            const result = await productCollection.insertOne(product)
+            res.send(result)
+        })
+
+        app.patch('/products/:id', async(req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const products = req.body;
+            const updatedDoc = {
+              $set: {
+                upvote_button: products.upvote_button
+              }
+            }
+            const result = await productCollection.updateOne(filter, products, updatedDoc);
+            res.send(result);
+        })
+
         //User related api 
         app.post('/users', async (req, res) => {
             const user = req.body;
