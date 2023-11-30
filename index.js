@@ -31,45 +31,48 @@ async function run() {
         const reviewCollection = client.db("tech-info").collection("reviews");
 
         //reviews releted api
-        app.get('/reviews', async(req, res) => {
+        app.get('/reviews', async (req, res) => {
             const result = await reviewCollection.find().toArray()
             res.send(result)
         })
-        app.post('/reviews', async(req, res) => {
+        app.post('/reviews', async (req, res) => {
             const review = req.body;
             const result = await reviewCollection.insertOne(review)
             res.send(result)
         })
 
         //Product related api 
-        app.get('/products', async(req, res) => {
+        app.get('/products', async (req, res) => {
             const result = await productCollection.find().toArray()
             res.send(result)
         })
 
-        app.get('/products/:id', async(req, res) =>{
+        app.get('/products/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await productCollection.findOne(query)
             res.send(result)
         })
 
-        app.post('/products', async(req, res) =>{
+        app.post('/products', async (req, res) => {
             const product = req.body;
             const result = await productCollection.insertOne(product)
             res.send(result)
         })
 
-        app.patch('/products/:id', async(req, res) => {
+        app.put('/products/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
-            const products = req.body;
-            const updatedDoc = {
-              $set: {
-                upvote_button: products.upvote_button
-              }
+            const options = { upsert: true };
+            const updateProducts = req.body;
+            const booking = {
+                $set: {
+                    product_image: updateProducts.product_image,
+                    product_name: updateProducts.product_name,
+                    description: updateProducts.description,
+                }
             }
-            const result = await productCollection.updateOne(filter, products, updatedDoc);
+            const result = await productCollection.updateOne(filter, booking, options);
             res.send(result);
         })
         app.delete('/product/:id', async (req, res) => {
@@ -77,19 +80,60 @@ async function run() {
             const query = { _id: new ObjectId(id) }
             const result = await productCollection.deleteOne(query);
             res.send(result);
-          })
-        //User related api 
+        })
+        // users related api
+        app.get('/users', async (req, res) => {
+            const result = await userCollection.find().toArray();
+            res.send(result);
+        });
+
+        app.get('/users/admin/:email', async (req, res) => {
+            const email = req.params.email;
+
+            if (email !== req.decoded.email) {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            let admin = false;
+            if (user) {
+                admin = user?.role === 'admin';
+            }
+            res.send({ admin });
+        })
+
         app.post('/users', async (req, res) => {
             const user = req.body;
             const query = { email: user.email }
             const existingUser = await userCollection.findOne(query);
             if (existingUser) {
-              return res.send({ message: 'user already exists', insertedId: null })
+                return res.send({ message: 'user already exists', insertedId: null })
             }
             const result = await userCollection.insertOne(user);
             res.send(result);
-          });
-        
+        });
+
+        app.patch('/users/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    role: 'admin'
+                }
+            }
+            const result = await userCollection.updateOne(filter, updatedDoc);
+            res.send(result);
+        })
+
+        app.delete('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await userCollection.deleteOne(query);
+            res.send(result);
+        })
+
+
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
